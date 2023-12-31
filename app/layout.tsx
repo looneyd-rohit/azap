@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import AuthProvider from "./context/AuthProvider";
-import { Inter as FontSans } from "next/font/google";
+import { Inter as MyFontSans } from "next/font/google";
 
 import { cn } from "@/lib/utils";
 
-export const fontSans = FontSans({
+const fontSans = MyFontSans({
   subsets: ["latin"],
   variable: "--font-sans",
 });
