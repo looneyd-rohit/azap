@@ -7,7 +7,9 @@ import UpdateForm from "./form";
 
 const Dashbord = async () => {
   const session = await getServerSession(options);
-
+  if (!session) {
+    redirect("/signin?callbackUrl=/dashboard");
+  }
   return (
     <div>
       <h1>Dashboard</h1>
