@@ -5,6 +5,7 @@ import { Inter as MyFontSans } from "next/font/google";
 
 import { cn } from "@/lib/utils";
 import Script from "next/script";
+import { SocketProvider } from "@/app/components/providers/socket-provider";
 
 const fontSans = MyFontSans({
   subsets: ["latin"],
@@ -26,18 +27,19 @@ export default function RootLayout({
       {/* <html lang="en">
         <body className={inter.className}>{children}</body>
       </html> */}
-
-      <html lang="en" suppressHydrationWarning>
-        <head />
-        <body
-          className={cn(
-            "min-h-screen bg-background font-sans antialiased",
-            fontSans.variable
-          )}
-        >
-          {children}
-        </body>
-      </html>
+      <SocketProvider>
+        <html lang="en" suppressHydrationWarning>
+          <head />
+          <body
+            className={cn(
+              "min-h-screen bg-background font-sans antialiased",
+              fontSans.variable
+            )}
+          >
+            {children}
+          </body>
+        </html>
+      </SocketProvider>
     </AuthProvider>
   );
 }

@@ -40,3 +40,5 @@ next-env.d.ts
 *.txt
 
 prisma/migrations
+
+not-used*
