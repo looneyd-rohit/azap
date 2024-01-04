@@ -22,6 +22,7 @@ import {
   GoogleLoginButton,
 } from "react-social-login-buttons";
 import { redirect } from "next/navigation";
+import CustomButton from "@/components/ui/CustomButton";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -50,7 +51,7 @@ export default function SignIn() {
   }
 
   return (
-    <Background>
+    <Background position="absolute">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -73,12 +74,7 @@ export default function SignIn() {
               </FormItem>
             )}
           />
-          <Button
-            type="submit"
-            className="border rounded-xl focus-visible:ring-0 focus:outline-none active:outline-none focus:bg-zinc-300 hover:bg-zinc-400 focus:text-zinc-900 hover:text-zinc-800 w-[100px] h-[50px] text-xl font-semibold"
-          >
-            Sign In
-          </Button>
+          <CustomButton type="submit">Sign In</CustomButton>
         </form>
       </Form>
       <div className="flex justify-center items-center w-full mt-6">

@@ -1,5 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    // webpack: (config, { isServer }) => {
+    //     if (!isServer) {
+    //         // Modify webpack configuration for server-side
+    //         config.resolve.fallback = { ...config.resolve.fallback, dgram: false, fs: false, net: false, tls: false, child_process: false, dns: false, fsctl: false };
+    //     }
+    //     return config;
+    // },
     images: {
         remotePatterns: [
             {

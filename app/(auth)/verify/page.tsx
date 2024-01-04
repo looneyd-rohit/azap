@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function Verify() {
   return (
-    <Background>
+    <Background position="absolute">
       <div className="w-[400px] h-[300px] bg-zinc-600 rounded-[20px] flex flex-col justify-center items-center">
         <div className="text-[2rem] font-bold my-2 text-gray-200">
           Check your email

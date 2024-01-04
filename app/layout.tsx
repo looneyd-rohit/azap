@@ -4,6 +4,7 @@ import AuthProvider from "./context/AuthProvider";
 import { Inter as MyFontSans } from "next/font/google";
 
 import { cn } from "@/lib/utils";
+import Script from "next/script";
 
 const fontSans = MyFontSans({
   subsets: ["latin"],
