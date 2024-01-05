@@ -1,7 +1,7 @@
 "use client";
 import CustomButton from "@/components/ui/CustomButton";
 import Background from "@/components/ui/wrapper";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
 import { ToastContainer, toast } from "react-toastify";
@@ -11,6 +11,7 @@ import ContainerComponent from "./ContainerComponent";
 import { useSocket } from "./providers/socket-provider";
 import { createId } from "@/config/cuid";
 import { MdLinkOff } from "react-icons/md";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Upload() {
   const form = useForm();
@@ -20,7 +21,71 @@ export default function Upload() {
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isRoomJoined, setIsRoomJoined] = useState<boolean>(false);
-  const [currentRoomId, setCurrentRoomId] = useState<string>(createId());
+  const [currentRoomId, setCurrentRoomId] = useState<string>("");
+
+  // add event listeners when socket is active
+  // handle file upload function
+  const handleFileUpload = useCallback(
+    async (data: any) => {
+      if (!socket) {
+        console.error("socket is null");
+      }
+      if (!selectedFile) {
+        socket.emit(
+          "error-broadcast",
+          "Error: no file selected on client side"
+        );
+        return;
+      }
+      // upload the file
+      // socket.emit("process-and-send-chunk", { chunk: "chunk69", roomId: data.roomId, id: data.id });
+
+      const reader = new FileReader();
+
+      reader.onload = (e: any) => {
+        const fileData = e.target.result;
+        const chunkSize = 1024 * 1024; // 50KB
+
+        for (let offset = 0, index=0; offset < fileData.length; offset += chunkSize, index++) {
+          const chunk = fileData.slice(offset, offset + chunkSize);
+          const isLastChunk = (offset + chunkSize) >= fileData.length;
+          // console.log("chunk: ", chunk);
+          socket.emit("process-and-send-chunk", {
+            chunk,
+            index,
+            id: data.id,
+            roomId: data.roomId,
+            isLastChunk,
+            fileName: selectedFile.name,
+            fileSize: selectedFile.size,
+          });
+        }
+      };
+
+      reader.readAsBinaryString(selectedFile);
+      console.log("handleFileUpload called...");
+      console.log(data);
+    },
+    [socket, selectedFile]
+  );
+  useEffect(() => {
+    socket?.on("file-upload", handleFileUpload);
+    return () => {
+      socket?.off("file-upload", handleFileUpload);
+    };
+  }, [socket, handleFileUpload]);
+
+  // cleanup useEffect
+  useEffect(() => {
+    // cleanup call
+    return () => {
+      socket?.disconnect();
+      setSelectedFileName(null);
+      setSelectedFile(null);
+      setIsRoomJoined(false);
+      setCurrentRoomId("");
+    };
+  }, [socket]);
 
   const onDrop = useCallback((acceptedFiles: Array<File>) => {
     if (acceptedFiles.length !== 1) {
@@ -71,7 +136,7 @@ export default function Upload() {
       toast.error("Some error occured. Please try again.");
       return;
     }
-    // user will have to join a room
+    // user will have to create a room
     const randomId = createId().toString();
     console.log(randomId);
     socket?.emit("create-room", { roomId: randomId });
@@ -92,26 +157,6 @@ export default function Upload() {
     }
     console.log("uploaded...");
     console.log(selectedFile);
-
-    // emit the file to the room only if receiver is present on the room
-    // emitting occurs in chunks of 1MB
-    const chunkSize = 1024 * 1024;
-    const fileSize = selectedFile.size;
-    const chunks = Math.ceil(fileSize / chunkSize);
-    const chunkArray = Array.from(Array(chunks).keys());
-    console.log(chunks);
-    console.log(chunkArray);
-    chunkArray.forEach((chunkIndex) => {
-      const start = chunkIndex * chunkSize;
-      const end = Math.min(fileSize, start + chunkSize);
-      const chunk = selectedFile.slice(start, end);
-      const chunkData = {
-        roomId: currentRoomId,
-        chunkIndex,
-        chunk,
-      };
-      socket?.emit("file-upload", chunkData);
-    });
   };
 
   return (
@@ -179,6 +224,12 @@ export default function Upload() {
               <MdLinkOff />
             </CustomButton>
           </form>
+        )}
+        {isRoomJoined && (
+          <div>
+            Join using:{" "}
+            {`http://localhost:3000/socket/download?roomId=${currentRoomId}`}
+          </div>
         )}
       </Background>
       <ToastContainer />

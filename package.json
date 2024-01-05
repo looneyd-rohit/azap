@@ -25,6 +25,7 @@
     "clsx": "^2.0.0",
     "crypto-js": "^4.2.0",
     "dgram": "^1.0.1",
+    "file-saver": "^2.0.5",
     "jose": "^5.2.0",
     "lucide-react": "^0.302.0",
     "nanoid": "^5.0.4",
@@ -48,6 +49,7 @@
   },
   "devDependencies": {
     "@types/crypto-js": "^4.2.1",
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^20",
     "@types/nodemailer": "^6.4.14",
     "@types/react": "^18",

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import type { Socket } from "socket.io";
 import { io as ClientIO } from "socket.io-client";
 
 type SocketContextType = {
@@ -19,12 +20,12 @@ const SocketContext = createContext<SocketContextType>({
 export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
-  const [socket, setSocket] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
 
   useEffect(() => {
-    console.log('public url: ',process.env.NEXT_PUBLIC_SITE_URL)
-    console.log('public url: ',process.env.NEXTAUTH_URL)
+    // console.log('public url: ',process.env.NEXT_PUBLIC_SITE_URL)
+    // console.log('public url: ',process.env.NEXTAUTH_URL)
     const socketInstance = new (ClientIO as any)(
       process.env.NEXT_PUBLIC_SITE_URL!,
       // process.env.NEXTAUTH_URL!,
@@ -44,8 +45,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     });
     socketInstance.on("error", (data: any) => {
       console.log("client error", data);
-      toast.error("Socket error, refreshing the page.");
-      window.location.reload();
+      toast.error(`${data}`);
+      // window.location.reload();
     });
 
     setSocket(socketInstance);

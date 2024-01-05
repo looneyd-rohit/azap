@@ -2,13 +2,24 @@ import { Server as NetServer } from "http";
 import { NextApiRequest } from "next";
 import { Server as ServerIO } from "socket.io";
 import { NextApiResponseServerIo } from "@/types";
-import { RedisClient } from "@/config/redis";
 
 export const config = {
   api: {
     bodyParser: false,
   },
 };
+
+type ProcessAndSendChunkTypes = {
+  chunk: any;
+  index: number;
+  roomId: string;
+  id: string;
+  isLastChunk: boolean;
+  fileName: string;
+  fileSize: number;
+};
+
+const rooomToHostMap = new Map<string, string>();
 
 const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIo) => {
   if (!res.socket.server.io) {
@@ -19,67 +30,72 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIo) => {
       addTrailingSlash: false,
     });
     io.on("connection", async (socket: any) => {
-      console.log("socket connected...");
+      console.log(`socket: [${socket.id}] connected...`);
       console.log("gandu:", socket.id);
 
+      // create room
+      // host creates a room
       socket.on("create-room", async ({ roomId }: { roomId: string }) => {
-        console.log("room: ", roomId);
-        // check whether room already has 2 users
-        const countOfUsers = await RedisClient.get(roomId);
-        console.log("count of users: ", countOfUsers);
-        if (countOfUsers === 2) {
-          socket.emit("error", { message: "Room is full" });
-          return;
-        } else if (countOfUsers === null) {
-          socket.join(roomId);
-          await Promise.all([
-            RedisClient.set(roomId, 1),
-            RedisClient.set(socket.id, roomId),
-          ]);
-        } else if (countOfUsers === 1) {
-          socket.join(roomId);
-          await Promise.all([
-            RedisClient.set(roomId, 2),
-            RedisClient.set(socket.id, roomId),
-          ]);
-        }
-        console.log("count of users: ", await RedisClient.get(roomId));
+        socket.join(roomId);
+        socket.join(socket.id);
+        socket.roomId = roomId;
+        socket.host = true;
+        rooomToHostMap.set(roomId, socket.id);
+        console.log(`socket: [${socket.id}] created room: ${roomId}`);
+        console.log(`socket: [${socket.id}] is the [HOST]`);
       });
 
-      // file upload
+      // join room
+      socket.on("join-room", async ({ roomId }: { roomId: string }) => {
+        socket.join(roomId);
+        socket.join(socket.id);
+        socket.roomId = roomId;
+        console.log(`socket: [${socket.id}] joined room: ${roomId}`);
+      });
+
+      // file download
+      socket.on("file-download", async ({ roomId }: { roomId: string }) => {
+        const hostId = rooomToHostMap.get(roomId);
+        // socket.to(hostId).emit("file-upload", { roomId });
+        // send upload event to host
+        io.sockets.in(hostId!).emit("file-upload", { roomId, id: socket.id });
+        console.log(`socket: [${socket.id}] file download: ${roomId}`);
+      });
+
+      // process and send chunk
       socket.on(
-        "file-upload",
+        "process-and-send-chunk",
         async ({
-          roomId,
-          chunkIndex,
           chunk,
-        }: {
-          roomId: string;
-          chunkIndex: Number;
-          chunk: Blob;
-        }) => {
-          console.log("file upload: ", chunk);
-          console.log(roomId, chunkIndex, chunk);
-          // socket.to(roomId).emit("file-upload", file);
+          index,
+          roomId,
+          id,
+          isLastChunk,
+          fileName,
+          fileSize,
+        }: ProcessAndSendChunkTypes) => {
+          const data = {
+            chunk,
+            roomId,
+            id,
+            isLastChunk,
+            fileName,
+            fileSize,
+          };
+          io.to(id).emit("download-chunk", data);
+          console.log(
+            `socket: [${socket.id}] sent chunk to: ${id} in room: ${roomId}`
+          );
         }
       );
 
+      // error broadcasting
+      socket.on("error-broadcast", (msg: string) => {
+        socket.broadcast.emit("error", msg);
+      });
+
       socket.on("disconnect", async () => {
-        console.log("socket disconnected: ", socket.id);
-        // remove user from room
-        const roomId: string | null = await RedisClient.get(socket.id);
-        if (roomId) {
-          // if user was in a room then do the following
-          await Promise.all([
-            RedisClient.del(socket.id),
-            RedisClient.decr(roomId),
-          ]);
-          const countOfUsers = await RedisClient.get(roomId);
-          console.log("[decr] count of users: ", countOfUsers);
-          if (countOfUsers === 0 || countOfUsers == null) {
-            await RedisClient.del(roomId);
-          }
-        }
+        console.log(`socket: [${socket.id}] disconnected`);
       });
     });
     res.socket.server.io = io;
