@@ -23,8 +23,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+    console.log('public url: ',process.env.NEXT_PUBLIC_SITE_URL)
+    console.log('public url: ',process.env.NEXTAUTH_URL)
     const socketInstance = new (ClientIO as any)(
       process.env.NEXT_PUBLIC_SITE_URL!,
+      // process.env.NEXTAUTH_URL!,
       {
         path: "/api/socket/io",
         addTrailingSlash: false,
