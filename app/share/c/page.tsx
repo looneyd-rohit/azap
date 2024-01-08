@@ -11,17 +11,18 @@ import React, {
   useState,
 } from "react";
 import { useDropzone } from "react-dropzone";
-import { useForm } from "react-hook-form";
+import { set, useForm } from "react-hook-form";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { StyleSheetManager } from "styled-components";
-import ContainerComponent from "./ContainerComponent";
-import { useSocket } from "./providers/socket-provider";
+import ContainerComponent from "@/app/components/ContainerComponent";
+import { useSocket } from "@/app/components/providers/socket-provider";
 import { createId } from "@/config/cuid";
 import { MdLinkOff } from "react-icons/md";
 import "react-toastify/dist/ReactToastify.css";
 import { GetNewWorkerInstance } from "@/lib/utils";
 import SimplePeer from "simple-peer";
+import { redirect, useSearchParams } from "next/navigation";
 
 type PayloadType = {
   target: string;
@@ -29,8 +30,9 @@ type PayloadType = {
   signal: SimplePeer.SignalData;
 };
 
-export default function Upload() {
-  const form = useForm();
+export default function Download() {
+  const searchParams = useSearchParams();
+  const roomId = searchParams?.get("roomId");
 
   const { socket, isConnected } = useSocket();
 
@@ -101,28 +103,39 @@ export default function Upload() {
   // join a new room as and when the page loads up
   useEffect(() => {
     if (!socket) return;
+    if (!roomId) {
+      toast.error("Please provide a room id");
+      redirect("/");
+      return;
+    }
     // instantiate worker thread
     workerRef.current = GetNewWorkerInstance();
     console.log("workerref: ", workerRef.current);
 
     // join a new room on page load
-    const randomRoomId = createId()
+    const randomRoomId = roomId;
     setCurrentRoomId(randomRoomId);
-    socket?.emit("join room", randomRoomId);
-    socket?.on("user conencted", (userId: string) => {
+    socket?.emit("join-room", randomRoomId);
+    socket?.on("user-connected", (userId: string) => {
       peerRef.current = createPeer(userId, socket?.id);
+      toast.success("Peer connected");
     });
 
     // set up peers
-    socket?.on("user joined", (payload: PayloadType) => {
-      console.log("user joined: ", payload);
+    socket?.on("user-joined", (payload: PayloadType) => {
+      console.log("user-joined: ", payload);
       peerRef.current = addPeer(payload.signal, payload.callerID);
     });
 
-    socket?.on("receiving returned signal", (payload: PayloadType) => {
-      console.log("Peer1 Return signal added", payload.signal);
+    socket?.on("receiving-returned-signal", (payload: PayloadType) => {
+      console.log("Peer1-Return-signal-added", payload.signal);
       peerRef.current?.signal(payload.signal);
       setIsPeerConnected(true);
+    });
+
+    socket?.on("peer-disconnect", (msg: string) => {
+      setIsPeerConnected(false);
+      toast.error(msg);
     });
 
     return () => {
@@ -134,16 +147,16 @@ export default function Upload() {
   }, [socket]);
 
   function createPeer(target: string, callerID: string) {
-    console.log("Peer1 Created");
+    console.log("Peer1-Created");
     const peer = new SimplePeer({
       initiator: true,
       trickle: false,
     });
 
-    console.log("created peer: ", peer);
+    console.log("created-peer: ", peer);
 
     peer.on("signal", (signal: SimplePeer.SignalData) => {
-      socket?.emit("sending signal", {
+      socket?.emit("sending-signal", {
         target,
         callerID,
         signal,
@@ -156,7 +169,7 @@ export default function Upload() {
   }
 
   function addPeer(incomingSignal: SimplePeer.SignalData, callerID: string) {
-    console.log("Peer2 Added");
+    console.log("Peer2-Added");
 
     const peer = new SimplePeer({
       initiator: false,
@@ -164,7 +177,7 @@ export default function Upload() {
     });
 
     peer.on("signal", (signal: SimplePeer.SignalData) => {
-      socket?.emit("returning signal", {
+      socket?.emit("returning-signal", {
         signal,
         target: callerID,
       });
@@ -172,20 +185,21 @@ export default function Upload() {
 
     peer.on("data", handleReceivingData);
 
-    console.log("Peer2 Signal Added", incomingSignal);
+    console.log("Peer2-Signal-Added", incomingSignal);
     peer.signal(incomingSignal);
     setIsPeerConnected(true);
+    toast.success("Peer connected");
     return peer;
   }
 
   function handleReceivingData(data: any) {
-    console.log("Data incoming");
+    console.log("Data-incoming");
     const worker = workerRef.current;
 
     if (data.toString().includes("done")) {
-      console.log("Data received");
+      console.log("Data-received");
       setIsReceivedFile(true);
-      const parsed = JSON.parse(data);
+      const parsed = JSON.parse(data.toString());
       receivedFileRef.current = parsed.fileName;
     } else {
       worker?.postMessage(data);
@@ -235,7 +249,7 @@ export default function Upload() {
           if (offset < selectedFile?.size!) {
             readSliceBlob(offset);
           } else {
-            console.log("Data sent");
+            console.log("Data-sent");
             peer?.write(
               JSON.stringify({ done: true, fileName: selectedFile?.name })
             );
@@ -317,7 +331,7 @@ export default function Upload() {
           <input onChange={selectFile} type="file" />
           <button onClick={sendFile}>Send File</button>
         </div>
-
+        {isPeerConnected ? `Connected...` : `Not Connected...`}
         {isReceivedFile && (
           <>
             {receivedFileRef.current}

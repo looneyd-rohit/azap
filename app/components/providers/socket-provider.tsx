@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import type { Socket } from "socket.io";
@@ -44,7 +44,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       setIsConnected(false);
     });
     socketInstance.on("error", (data: any) => {
-      console.log("client error", data);
+      console.log("client error: ", data);
       toast.error(`${data}`);
       // window.location.reload();
     });

@@ -1,5 +1,5 @@
 import React, { Fragment } from "react";
-import Upload from "../../components/Upload";
+import Upload from "../components/Upload";
 import { SocketIndicator } from "@/app/components/socket-indicator";
 
 const Socket = () => {
