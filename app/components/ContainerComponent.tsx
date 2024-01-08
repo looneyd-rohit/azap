@@ -45,7 +45,7 @@ const ContainerComponent = (props: any) => {
     <Container
       {...props.getRootProps({
         isfocused: props.isfocused ? "true" : "false",
-        isdragaccept: props.isdragaccept ? "true" : "false",
+        isdragaccept: props.isdragaccept && props.isdisabled ? "true" : "false",
         isdragreject: props.isdragreject ? "true" : "false",
         selectedfilename: props.selectedfilename,
       })}
@@ -54,7 +54,7 @@ const ContainerComponent = (props: any) => {
       <input {...props.getInputProps()} />
       {props.isdragactive ? (
         <p className="w-full flex justify-center items-center">
-          Drag &apos;n&apos; drop one file here, or click to select a file
+          {`Drag and drop a File here :)`}
         </p>
       ) : props.selectedfilename && props.selectedfilename.length > 0 ? (
         <p className="w-full flex justify-center items-center">
@@ -62,7 +62,7 @@ const ContainerComponent = (props: any) => {
         </p>
       ) : (
         <p className="w-full flex justify-center items-center">
-          Drag &apos;n&apos; drop one file here, or click to select a file
+          {`Drag and drop a File here :)`}
         </p>
       )}
     </Container>
