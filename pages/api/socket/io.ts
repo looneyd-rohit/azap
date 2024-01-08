@@ -55,7 +55,7 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIo) => {
       });
 
       socket.on("sending-signal", (payload) => {
-        console.log("sending-signal: ", payload);
+        // console.log("sending-signal: ", payload);
         io.to(payload.target).emit("user-joined", payload);
       });
 
