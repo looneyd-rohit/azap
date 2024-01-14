@@ -168,6 +168,13 @@ export default function Download() {
     console.log("Peer1-Created");
     const peer = new SimplePeer({
       initiator: true,
+      objectMode: true,
+      config: {
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:global.stun.twilio.com:3478" },
+        ],
+      },
       trickle: false,
     });
 
