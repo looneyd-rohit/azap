@@ -40,7 +40,7 @@ const Container = styled.div<ContainerProps>`
     props.selectedfilename ? "0 0 100px rgba(33, 150, 243, 0.7)" : "none"};
 `;
 
-const ContainerComponent = (props: any) => {
+const UploadContainerComponent = (props: any) => {
   return (
     <Container
       {...props.getRootProps({
@@ -69,4 +69,4 @@ const ContainerComponent = (props: any) => {
   );
 };
 
-export default ContainerComponent;
+export default UploadContainerComponent;

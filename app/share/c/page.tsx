@@ -15,7 +15,7 @@ import { set, useForm } from "react-hook-form";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { StyleSheetManager } from "styled-components";
-import ContainerComponent from "@/app/components/ContainerComponent";
+import UploadContainerComponent from "@/app/components/UploadContainerComponent";
 import { useSocket } from "@/app/components/providers/socket-provider";
 import { createId } from "@/config/cuid";
 import { MdLinkOff } from "react-icons/md";
@@ -271,7 +271,7 @@ export default function Download() {
             ((offset / CHUNK_SIZE + 1) / totalChunks) * 100
           );
 
-          if (newProgressTillNow > progressTillNow) {
+          if (newProgressTillNow > progressTillNow + 5) {
             progressTillNow = newProgressTillNow;
             console.log("progress: ", progressTillNow);
             socket?.emit(
@@ -325,7 +325,7 @@ export default function Download() {
                 // return true;
               }}
             >
-              <ContainerComponent
+              <UploadContainerComponent
                 getRootProps={getRootProps}
                 isfocused={isfocused}
                 isdragaccept={isdragaccept}
@@ -379,7 +379,7 @@ export default function Download() {
               <button
                 onClick={() => {
                   copyValueToClipboard(
-                    `http://localhost:3000/share/c?roomId=${currentRoomId}`
+                    `${process.env.NEXT_PUBLIC_SITE_URL}/share/c?roomId=${currentRoomId}`
                   );
                   toast.success("Copied to clipboard");
                 }}
