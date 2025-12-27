@@ -1,5 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    allowedDevOrigins: [
+        'http://localhost:3000',
+        'http://192.168.1.2:3000', // Add the problematic IP and port here
+        // You might also need the IP address by itself for HMR to work
+        '192.168.1.2',
+    ],
+
     // webpack: (config, { isServer }) => {
     //     if (!isServer) {
     //         // Modify webpack configuration for server-side

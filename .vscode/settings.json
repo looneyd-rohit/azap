@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/d4ec7e86-a7fb-4074-ad46-e1de1019df16/resourceGroups/azaap-dev-resource-group/providers/Microsoft.Web/sites/azaap",
+    "appService.deploySubpath": "."
+}
