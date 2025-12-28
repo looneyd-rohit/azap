@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+// @ts-ignore
 import "./globals.css";
+import type { Metadata } from "next";
 import AuthProvider from "./context/AuthProvider";
 import { Inter as MyFontSans } from "next/font/google";
 
 import { cn } from "@/lib/utils";
-import Script from "next/script";
 import { SocketProvider } from "@/app/components/providers/socket-provider";
 
 const fontSans = MyFontSans({

@@ -270,7 +270,6 @@ function Download() {
     if (!roomId) {
       toast.error("Please provide a room id");
       redirect("/");
-      return;
     }
     // instantiate worker thread
     workerRef.current = GetNewWorkerInstance();
@@ -297,6 +296,7 @@ function Download() {
 
     socket?.on("peer-disconnect", (msg: string) => {
       setIsPeerConnected(false);
+      peerRef.current?.destroy();
       toast.error(msg);
     });
 
@@ -307,6 +307,8 @@ function Download() {
 
     return () => {
       socket?.disconnect();
+      peerRef.current?.destroy();
+      workerRef.current?.terminate();
       setSelectedFileName(null);
       setSelectedFile(null);
     };

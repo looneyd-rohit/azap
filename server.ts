@@ -113,7 +113,7 @@ app.prepare().then(() => {
             // emit about peer leaving the room if peer was in the room
             const isPeerInRoom = remainingUsers.length > 0;
             if (isPeerInRoom) {
-                io.sockets.in(roomId).emit("peer-disconnect", "Peer left the room");
+                io.sockets.in(roomId).emit("peer-disconnect", {msg:"Peer left the room", id: socket.id});
             }
         });
     });
