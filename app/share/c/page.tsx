@@ -10,6 +10,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import SuspenseWrapper from "@/app/components/SuspenseWrapper";
 import { useDropzone } from "react-dropzone";
 import { set, useForm } from "react-hook-form";
 import { ToastContainer, toast } from "react-toastify";
@@ -35,7 +36,7 @@ type PayloadType = {
   signal: SimplePeer.SignalData;
 };
 
-export default function Download() {
+function Download() {
   const form = useForm();
   const searchParams = useSearchParams();
   const roomId = searchParams?.get("roomId");
@@ -54,9 +55,9 @@ export default function Download() {
   const [receivedProgress, setReceivedProgress] = useState<number | null>(null);
   const [sentProgress, setSentProgress] = useState<number | null>(null);
 
-  const receivedFileRef: MutableRefObject<string | null> = useRef(null);
-  const workerRef: MutableRefObject<Worker | undefined> = useRef();
-  const peerRef: MutableRefObject<SimplePeer.Instance | undefined> = useRef();
+  const receivedFileRef = useRef<string | null>(null);
+  const workerRef = useRef<Worker | undefined>(undefined);
+  const peerRef = useRef<SimplePeer.Instance | undefined>(undefined);
 
   const onDrop = useCallback((acceptedFiles: Array<File>) => {
     if (acceptedFiles.length !== 1) {
@@ -477,5 +478,13 @@ export default function Download() {
       }
       <ToastContainer />
     </>
+  );
+}
+
+export default function Page() {
+  return (
+    <SuspenseWrapper>
+      <Download />
+    </SuspenseWrapper>
   );
 }
