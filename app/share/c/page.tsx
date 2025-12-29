@@ -8,17 +8,19 @@ import React, {
   useEffect,
   useMemo,
   useRef,
-  useState,
+  useState
 } from "react";
 import { useDropzone } from "react-dropzone";
 import { set, useForm } from "react-hook-form";
 import { ToastContainer, toast } from "react-toastify";
+// @ts-ignore
 import "react-toastify/dist/ReactToastify.css";
 import { StyleSheetManager } from "styled-components";
 import UploadContainerComponent from "@/app/components/UploadContainerComponent";
 import { useSocket } from "@/app/components/providers/socket-provider";
 import { createId } from "@/config/cuid";
 import { MdLinkOff } from "react-icons/md";
+// @ts-ignore
 import "react-toastify/dist/ReactToastify.css";
 import { GetNewWorkerInstance } from "@/lib/utils";
 import SimplePeer from "simple-peer";
@@ -28,6 +30,7 @@ import { PeerIndicator } from "@/app/components/peer-indicator";
 import { IoMdCopy } from "react-icons/io";
 import { useCopyToClipboard } from "usehooks-ts";
 import ProgressBar from "@ramonak/react-progress-bar";
+import SuspenseWrapper from "@/app/components/SuspenseWrapper";
 
 type PayloadType = {
   target: string;
@@ -35,7 +38,7 @@ type PayloadType = {
   signal: SimplePeer.SignalData;
 };
 
-export default function Download() {
+function Download() {
   const form = useForm();
   const searchParams = useSearchParams();
   const roomId = searchParams?.get("roomId");
@@ -47,7 +50,6 @@ export default function Download() {
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [isPeerConnected, setIsPeerConnected] = useState<boolean>(false);
   const [isReceivedFile, setIsReceivedFile] = useState<boolean>(false);
 
@@ -55,8 +57,8 @@ export default function Download() {
   const [sentProgress, setSentProgress] = useState<number | null>(null);
 
   const receivedFileRef: MutableRefObject<string | null> = useRef(null);
-  const workerRef: MutableRefObject<Worker | undefined> = useRef();
-  const peerRef: MutableRefObject<SimplePeer.Instance | undefined> = useRef();
+  const workerRef: MutableRefObject<Worker | undefined> = useRef(undefined);
+  const peerRef: MutableRefObject<SimplePeer.Instance | undefined> = useRef(undefined);
 
   const onDrop = useCallback((acceptedFiles: Array<File>) => {
     if (acceptedFiles.length !== 1) {
@@ -113,58 +115,21 @@ export default function Download() {
     console.log(selectedFile);
   };
 
-  // join a new room as and when the page loads up
-  useEffect(() => {
-    if (!socket) return;
-    if (!roomId) {
-      toast.error("Please provide a room id");
-      redirect("/");
-      return;
+  function handleReceivingData(data: any) {
+    console.log("Data-incoming: ", data);
+    const worker = workerRef.current;
+
+    if (data.toString().includes("done")) {
+      console.log("Data-received");
+      setIsReceivedFile(true);
+      const parsed = JSON.parse(data.toString());
+      receivedFileRef.current = parsed.fileName;
+    } else {
+      worker?.postMessage(data);
     }
-    // instantiate worker thread
-    workerRef.current = GetNewWorkerInstance();
-    console.log("workerref: ", workerRef.current);
+  }
 
-    // join a new room on page load
-    const randomRoomId = roomId;
-    setCurrentRoomId(randomRoomId);
-    socket?.emit("join-room", randomRoomId);
-    socket?.on("user-connected", (userId: string) => {
-      peerRef.current = createPeer(userId, socket?.id);
-      toast.success("Peer connected");
-    });
-
-    // set up peers
-    socket?.on("user-joined", (payload: PayloadType) => {
-      console.log("user-joined: ", payload);
-      peerRef.current = addPeer(payload.signal, payload.callerID);
-    });
-
-    socket?.on("receiving-returned-signal", (payload: PayloadType) => {
-      console.log("Peer1-Return-signal-added", payload.signal);
-      peerRef.current?.signal(payload.signal);
-      setIsPeerConnected(true);
-    });
-
-    socket?.on("peer-disconnect", (msg: string) => {
-      setIsPeerConnected(false);
-      toast.error(msg);
-    });
-
-    socket?.on("received-progress", (progress: number) => {
-      console.log("receive-progress: ", progress);
-      setReceivedProgress(progress);
-    });
-
-    return () => {
-      socket?.disconnect();
-      setSelectedFileName(null);
-      setSelectedFile(null);
-      setCurrentRoomId(null);
-    };
-  }, [socket]);
-
-  function createPeer(target: string, callerID: string) {
+  const createPeer = useCallback((target: string, callerID: string) => {
     console.log("Peer1-Created");
     const peer = new SimplePeer({
       initiator: true,
@@ -191,9 +156,9 @@ export default function Download() {
     peer.on("data", handleReceivingData);
 
     return peer;
-  }
+  }, [socket])
 
-  function addPeer(incomingSignal: SimplePeer.SignalData, callerID: string) {
+  const addPeer = useCallback((incomingSignal: SimplePeer.SignalData, callerID: string) => {
     console.log("Peer2-Added");
 
     const peer = new SimplePeer({
@@ -215,21 +180,7 @@ export default function Download() {
     setIsPeerConnected(true);
     toast.success("Peer connected");
     return peer;
-  }
-
-  function handleReceivingData(data: any) {
-    console.log("Data-incoming: ", data);
-    const worker = workerRef.current;
-
-    if (data.toString().includes("done")) {
-      console.log("Data-received");
-      setIsReceivedFile(true);
-      const parsed = JSON.parse(data.toString());
-      receivedFileRef.current = parsed.fileName;
-    } else {
-      worker?.postMessage(data);
-    }
-  }
+  }, [socket]);
 
   const downloadHandler = () => {
     setIsReceivedFile(false);
@@ -313,6 +264,56 @@ export default function Download() {
     }
   };
 
+  // join a new room as and when the page loads up
+  useEffect(() => {
+    if (!socket) return;
+    if (!roomId) {
+      toast.error("Please provide a room id");
+      redirect("/");
+    }
+    // instantiate worker thread
+    workerRef.current = GetNewWorkerInstance();
+    console.log("workerref: ", workerRef.current);
+
+    // join a new room on page load
+    socket?.emit("join-room", roomId);
+    socket?.on("user-connected", (userId: string) => {
+      peerRef.current = createPeer(userId, socket?.id);
+      toast.success("Peer connected");
+    });
+
+    // set up peers
+    socket?.on("user-joined", (payload: PayloadType) => {
+      console.log("user-joined: ", payload);
+      peerRef.current = addPeer(payload.signal, payload.callerID);
+    });
+
+    socket?.on("receiving-returned-signal", (payload: PayloadType) => {
+      console.log("Peer1-Return-signal-added", payload.signal);
+      peerRef.current?.signal(payload.signal);
+      setIsPeerConnected(true);
+    });
+
+    socket?.on("peer-disconnect", (msg: string) => {
+      setIsPeerConnected(false);
+      peerRef.current?.destroy();
+      toast.error(msg);
+    });
+
+    socket?.on("received-progress", (progress: number) => {
+      console.log("receive-progress: ", progress);
+      setReceivedProgress(progress);
+    });
+
+    return () => {
+      socket?.disconnect();
+      peerRef.current?.destroy();
+      workerRef.current?.terminate();
+      setSelectedFileName(null);
+      setSelectedFile(null);
+    };
+  }, [socket, addPeer, createPeer, roomId]);
+
   return (
     <>
       <div className="absolute right-[15px] top-[15px] sm:right-[25px] sm:top-[25px] ml-auto flex items-center">
@@ -373,7 +374,7 @@ export default function Download() {
             </div>
           </div>
 
-          {currentRoomId && (
+          {roomId && (
             <div className="w-fit relative cursor-copy">
               <div className="w-fit h-[30px] flex justify-center items-center bg-zinc-600 text-white border-none rounded-[16px] mt-4 mb-6">
                 <span className="font-bold">
@@ -386,7 +387,7 @@ export default function Download() {
               <button
                 onClick={() => {
                   copyValueToClipboard(
-                    `${process.env.NEXT_PUBLIC_SITE_URL}/share/c?roomId=${currentRoomId}`
+                    `${process.env.NEXT_PUBLIC_SITE_URL}/share/c?roomId=${roomId}`
                   );
                   toast.success("Copied to clipboard");
                 }}
@@ -460,10 +461,10 @@ export default function Download() {
         //     <input onChange={selectFileHandler} type="file" />
         //     <button onClick={sendFileHandler}>Send File</button>
         //   </div>
-        //   {currentRoomId && (
+        //   {roomId && (
         //     <div>
         //       Join using:{" "}
-        //       {`http://localhost:3000/share/download?roomId=${currentRoomId}`}
+        //       {`http://localhost:3000/share/download?roomId=${roomId}`}
         //     </div>
         //   )}
         //   {isPeerConnected ? `Connected...` : `Not Connected...`}
@@ -477,5 +478,13 @@ export default function Download() {
       }
       <ToastContainer />
     </>
+  );
+}
+
+export default function Page() {
+  return (
+    <SuspenseWrapper>
+      <Download />
+    </SuspenseWrapper>
   );
 }
