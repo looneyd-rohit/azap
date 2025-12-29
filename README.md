@@ -39,6 +39,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/deploym
 
 - scaling to multiple users
 - ci/cd integration
+    - https://youtu.be/Os0YOaeVPCs?si=sXqnN-NZlO1uFvm6
     - one stage for PR and other branches to check for successful build + test
     - second stage for PR and other branches for deploying to dev version
     - one stage when PR merges to main for deploying to stable version
