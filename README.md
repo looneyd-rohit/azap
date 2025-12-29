@@ -37,6 +37,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/deploym
 
 ## Upcoming features to implement
 
+- scaling to multiple users
 - ci/cd integration
     - one stage for PR and other branches to check for successful build + test
     - second stage for PR and other branches for deploying to dev version
